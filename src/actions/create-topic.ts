@@ -2,9 +2,9 @@
 
 import type { Topic } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import paths from '@/paths';
 
@@ -34,7 +34,6 @@ export async function createTopic(
   });
 
   if (!result.success) {
-    console.log(result.error.flatten().fieldErrors);
     return {
       errors: result.error.flatten().fieldErrors,
     };
@@ -51,6 +50,12 @@ export async function createTopic(
 
   let topic: Topic;
   try {
+    topic = await db.topic.create({
+      data: {
+        slug: result.data.name,
+        description: result.data.description,
+      },
+    });
   } catch (err: unknown) {
     if (err instanceof Error) {
       return {
@@ -66,4 +71,7 @@ export async function createTopic(
       };
     }
   }
+
+  revalidatePath('/');
+  redirect(paths.topicShow(topic.slug));
 }
